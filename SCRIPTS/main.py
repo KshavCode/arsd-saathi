@@ -138,6 +138,40 @@ class ARSDApp:
                 self.driver.quit()
             except Exception:
                 pass
+    def get_basic_details(self) :
+        try: 
+            self.login()
+            details_url = "https://www.arsdcollege.in/Internet/Student/STD_Basic_Details.aspx"
+            self.driver.get(details_url)
+            name_element = self.name
+            rollno_element = self.rollNo
+            enrollnum_element = self.wait.until(EC.presence_of_element_located((By.ID, "lbleno"))).text
+            enrollnum_element = self.wait.until(EC.presence_of_element_located((By.ID, "lbleno"))).text
+            fathername_element = self.wait.until(EC.presence_of_element_located((By.ID, "lblfname"))).text
+            course_element = self.wait.until(EC.presence_of_element_located((By.ID, "lblcoursecode"))).text + " - " + self.wait.until(EC.presence_of_element_located((By.ID, "lblcoursename"))).text
+            year_element = self.wait.until(EC.presence_of_element_located((By.ID, "lblpart"))).text + ", Semester " + self.wait.until(EC.presence_of_element_located((By.ID, "lblsem"))).text
+            mobile_element = self.wait.until(EC.presence_of_element_located((By.ID, "lblmobileno"))).text
+            email_element = self.wait.until(EC.presence_of_element_located((By.ID, "lblemail"))).text
+            address_element = self.wait.until(EC.presence_of_element_located((By.ID, "lbladdress_local"))).text
+            
+            basic_details = {
+                "name": name_element,
+                "rollNo": rollno_element,
+                "course": course_element,
+                "enrollmentNumber": enrollnum_element,
+                "fatherName": fathername_element,
+                "year": year_element,
+                "mobile": mobile_element,
+                "email": email_element,
+                "address": address_element
+            }
+            print(f"Basic Details: {basic_details}")
+            return basic_details
+        finally:
+            try:
+                self.driver.quit()
+            except Exception:
+                pass
     
 def main():
     load_dotenv()
@@ -146,7 +180,7 @@ def main():
     password = os.getenv('PASSWORD')
 
     app = ARSDApp(name, rollNo, password)
-    app.get_mentor_name()
+    app.get_basic_details()
 
 
 if __name__ == "__main__":
