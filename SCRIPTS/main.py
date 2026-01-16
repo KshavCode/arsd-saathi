@@ -34,7 +34,6 @@ class ARSDApp:
         self.chrome_options.add_argument('--disable-logging')
         self.chrome_options.add_argument('--log-level=3')
         self.chrome_options.add_argument('--silent')
-        # self.chrome_options.add_argument('--headless=new')
         self.chrome_options.set_capability("pageLoadStrategy", "eager")
 
         self.driver = webdriver.Chrome(options=self.chrome_options)

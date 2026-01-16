@@ -37,6 +37,7 @@ ArsdSaathi/.env*.local
 ArsdSaathi/*.tsbuildinfo
 
 ArsdSaathi/app-example
+ArsdSaathi/expo-env.d.ts
 
 # generated native folders
 ArsdSaathi/ios
