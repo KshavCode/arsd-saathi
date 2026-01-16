@@ -31,12 +31,15 @@ export default function App({ navigation }) {
       <View style={{ justifyContent: 'center', gap: 10, marginTop: 20 }}>
         <TouchableOpacity style={styles.longButtong}>
           <Text style={styles.buttonText}>View Detailed Attendance</Text>
+          <Ionicons name="bar-chart" color={Colors.light.background} size={18} />
         </TouchableOpacity>
         <TouchableOpacity style={styles.longButtong}>
           <Text style={styles.buttonText}>View Personal Details</Text>
+          <Ionicons name="person" color={Colors.light.background} size={18} />
         </TouchableOpacity>
         <TouchableOpacity style={styles.longButtong}>
           <Text style={styles.buttonText}>Check Faculty Details</Text>
+          <Ionicons name="people" color={Colors.light.background} size={18} />
         </TouchableOpacity>
         <TouchableOpacity style={[styles.longButtong, {backgroundColor: Colors.light.error}]} onPress={() => navigation.replace('Login')}>
           <Text style={styles.buttonText}>Logout</Text>
