@@ -48,3 +48,17 @@ SCRIPTS/.vscode
 
 SCRIPTS/venv
 SCRIPTS/.env
+
+API/venv
+
+# Ignore Python cache files
+__pycache__/
+*.pyc
+*.pyo
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
+
+# Ignore logs
+*.log
