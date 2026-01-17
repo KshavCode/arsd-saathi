@@ -8,6 +8,9 @@ from selenium.common.exceptions import TimeoutException
 from dotenv import load_dotenv
 import os
 
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+
 
 class ARSDApp:
     """Single-class refactor of the ARSD attendance script.
@@ -36,7 +39,11 @@ class ARSDApp:
         self.chrome_options.add_argument('--silent')
         self.chrome_options.set_capability("pageLoadStrategy", "eager")
 
-        self.driver = webdriver.Chrome(options=self.chrome_options)
+        # self.driver = webdriver.Chrome(options=self.chrome_options)
+        self.driver = webdriver.Chrome(
+    service=Service(ChromeDriverManager().install()),
+    options=self.chrome_options
+)
         self.wait = WebDriverWait(self.driver, 10)
         self.url = "https://www.arsdcollege.in/Internet/Student/Login.aspx"
 
@@ -56,6 +63,17 @@ class ARSDApp:
         password_element.clear()
         password_element.send_keys(self.password)
         submitBtn_element.click()
+
+         # 🔍 Give page time to react
+        self.driver.implicitly_wait(3)
+
+        # 🔎 If login form still exists → login failed
+        try:
+            self.driver.find_element(By.ID, "txtrollno")
+            return False
+        except:
+            # Login form gone → success
+            return True
 
     def get_attendance(self) -> bool:
         """Login and check for the monthly attendance report.
@@ -128,10 +146,11 @@ class ARSDApp:
             self.login()
             details_url = "https://www.arsdcollege.in/Internet/Student/Mentor_Details.aspx"
             self.driver.get(details_url)
-            mentor_element = self.wait.until(EC.presence_of_element_located((By.ID, "lblmentor_name")))
-            mentor_name = mentor_element.text
+            mentor_element = WebDriverWait(self.driver, 5).until(
+                        EC.presence_of_element_located((By.ID, "lblmentor_name")))
+            mentor_name = mentor_element.text.strip()
+            return mentor_name if mentor_name else None
             print(f"Mentor Name: {mentor_name}")
-            return mentor_name
         finally:
             try:
                 self.driver.quit()
@@ -180,6 +199,9 @@ def main():
 
     app = ARSDApp(name, rollNo, password)
     app.get_basic_details()
+
+# app = ARSDApp("Shivam", "23/38040", "SHIVAM" , headless=False)
+# print(app.get_mentor_name())
 
 
 if __name__ == "__main__":
