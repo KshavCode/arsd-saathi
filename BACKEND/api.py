@@ -1,118 +1,59 @@
-from fastapi import FastAPI, HTTPException, Depends, Header
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from extract import ARSDApp
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+from functools import partial
 import uuid
 
-# REQUIRE TOKEN FOR AUTHORIZATION IN FUTURE
+# We can keep workers low, but since it's 1 session per user, it's faster now.
+executor = ThreadPoolExecutor(max_workers=3)
 
 class LoginRequest(BaseModel):
     name: str
     rollNo: str
-    password: str
+    dob: str
 
-app = FastAPI(
-    tags = ["FastAPI endpoints for ARSD app"]
-)
+app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    # allow_origins=["http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-def require_token(authorization: str = Header(None)):
-    if not authorization:
-        raise HTTPException(status_code=401, detail="Login required")
-    return authorization
+async def run_in_thread(func, *args, **kwargs):
+    loop = asyncio.get_running_loop()
+    pfunc = partial(func, *args, **kwargs)
+    return await loop.run_in_executor(executor, pfunc)
 
-@app.get("/")
-def test():
-    return {"message": "API is working!"}
-
-@app.get("/api/login")
-async def login(name:str, rollno:str, password:str):
-    print("Login attempt for:", name, rollno)
+def _get_all_data_sync(name, rollno, dob):
+    app_instance = None
     try:
-        app_instance = ARSDApp(name, rollno, password, headless=True)
-        success = app_instance.login()
-        app_instance.driver.quit()
-        if not success:
-            return {"success": False, "message": "Invalid credentials"}
-        return {"success": True, "token": str(uuid.uuid4()), "message": "Login successful"}
+        app_instance = ARSDApp(name, rollno, dob, headless=True)
+        return app_instance.get_all_data()
+    finally:
+        if app_instance: app_instance.safe_quit()
 
-    except Exception as e:
-        return {"success": False, "message": "Invalid credentials"}
-
-
-@app.get("/api/get_attendance")
-async def get_attendance(data: dict, token:str = Depends(require_token)):
-    try:
-        app_instance = ARSDApp(data["name"], data["rollNo"], data["password"], headless=True)
-        report_found = app_instance.get_attendance()
-        return {
-            "success": True,
-            "report_found": report_found,
-            "message": "Attendance report found" if report_found else "Attendance report not found"
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-
-@app.get("/api/get_faculty_details")
-async def get_faculty_details(data: dict):
+@app.post("/api/login")
+async def login_and_fetch_all(request: LoginRequest):
+    print(f"Login & Fetch All: {request.name}")
     
-    try:
-        app_instance = ARSDApp(data["name"], data["rollNo"], data["password"], headless=True)
-        report_found = app_instance.get_faculty_details()
-        
-        return {
-            "success": True,
-            "data": report_found,
-            
-            "message": "Faculty details found"
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-   
-
-
-@app.get("/api/get_mentor_name")
-async def get_mentor_name(data: dict):
+    # This runs the single-session scraper
+    result = await run_in_thread(_get_all_data_sync, request.name, request.rollNo, request.dob)
     
-    try:
-        app_instance = ARSDApp(data["name"], data["rollNo"], data["password"], headless=True)
-        mentorName = app_instance.get_mentor_name()
-        
-        return {
-            "success": True,
-            "mentor_name": mentorName,
-            "message": "Mentor found"
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    if not result["success"]:
+        return {"success": False, "message": "Invalid Credentials or Login Failed"}
     
-
-@app.get("/api/get_basic_details")
-async def get_basic_details(data: dict):
-
-    try:
-        app_instance = ARSDApp(data["name"], data["rollNo"], data["password"], headless=True)
-        basic_details =  app_instance.get_basic_details()
-        
-        return {
-            "success": True,
-            "data": basic_details,
-            "message": "Basic details found"
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-   
+    return {
+        "success": True,
+        "token": str(uuid.uuid4()), # Mock token
+        "data": result # Contains all 4 dictionaries
+    }
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
