@@ -38,6 +38,10 @@ def _get_all_data_sync(name, rollno, dob):
     finally:
         if app_instance: app_instance.safe_quit()
 
+@app.get("/")
+async def test():
+    return {"success": True, "message": "Server is running!"}
+
 @app.post("/api/login")
 async def login_and_fetch_all(request: LoginRequest):
     print(f"Login & Fetch All: {request.name}")

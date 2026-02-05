@@ -1,50 +1,136 @@
-# Welcome to your Expo app 👋
+# ArsdSaathi 🎓
+**ArsdSaathi** is a cross-platform mobile application designed for students of ARSD College. It allows students to log in using their college credentials and seamlessly sync their **Attendance**, **Faculty Details**, and **Basic Profile Information** directly to their device for offline access.
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+The project uses a **"Offline-First"** architecture: data is scraped once upon login and stored locally, ensuring instant access without constant loading screens.
 
-## Get started
+## 🚀 Tech Stack
+### Frontend (Mobile App)
+* **Framework:** React Native (via Expo)
+* **Navigation:** React Navigation (Stack)
+* **Storage:** Async Storage (Persisted offline data)
+* **Networking:** Axios & NetInfo (Smart connectivity checks)
+* **UI/Theming:** Custom Dark/Light mode support
 
-1. Install dependencies
+### Backend (Scraper API)
+* **Server:** FastAPI
+* **Scraper:** Selenium WebDriver (Optimized for ASP.NET portals)
+* **Concurrency:** ThreadPoolExecutor (Non-blocking processing)
 
-   ```bash
-   npm install
-   ```
+---
 
-2. Start the app
+## 🛠️ Prerequisites
 
-   ```bash
-   npx expo start
-   ```
+Before running the project, ensure you have the following installed:
+1.  **Node.js** (v14 or higher)
+2.  **Python** (v3.8 or higher)
+3.  **Google Chrome** (Latest version)
+4.  **Expo Go** app installed on your physical Android/iOS device.
 
-In the output, you'll find options to open the app in a
+---
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## 📦 Installation Guide
+### 1. Backend Setup (Python)
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+Navigate to the `BACKEND` folder and set up the environment.
 
 ```bash
-npm run reset-project
+cd BACKEND
+
+# 1. Create a virtual environment (Optional but recommended)
+python -m venv venv
+
+# 2. Activate the virtual environment
+# Windows:
+venv\Scripts\activate
+# Mac/Linux:
+source venv/bin/activate
+
+# 3. Install dependencies
+pip install -r requrements.txt
+
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### 2. Frontend Setup (React Native)
 
-## Learn more
+Navigate to the ArsdSaathi folder.
 
-To learn more about developing your project with Expo, look at the following resources:
+```bash
+cd ../ArsdSaathi
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+cd .. 
 
-## Join the community
+# 1. Install Node modules
+npm install
 
-Join our community of developers creating universal apps.
+# 2. Install specific native dependencies
+npx expo install @react-native-async-storage/async-storage @react-native-community/netinfo expo-navigation-bar axios
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+```
+
+## ⚙️ Configuration (Critical Step)
+Since the mobile app runs on your phone and the backend runs on your laptop, you must tell the phone where to look.
+1. Open Command Prompt (Windows) or Terminal (Mac) and run:
+```bash
+ipconfig  # (Windows)
+# OR
+ifconfig  # (Mac/Linux)
+```
+2. Find your IPv4 Address (e.g., 192.168.1.5).
+3. Open ./services/api.js in your code editor.
+4. Create ./secret.js file and export IP_ADD of your computer
+```bash
+const BASE_URL = 'http://192.16X.XX.X:8000'; // <--- Replace this with YOUR IP
+```
+
+## ▶️ Running the App
+Step 1: Start the Backend
+Open a terminal in the BACKEND folder:
+```bash
+python api.py
+You should see: Uvicorn running on http://0.0.0.0:8000
+```
+
+Step 2: Start the Frontend
+Open a new terminal in the main project folder:
+Bash
+```bash
+npx expo start
+# OR
+npx expo start --tunnel
+```
+Scan the QR code with the Expo Go app on your phone.
+*Note: Ensure your phone and laptop are connected to the same Wi-Fi network.*
+
+## 🐛 Troubleshooting
+### 1. "Server Unreachable" / Network Error
+Firewall: Windows Firewall often blocks Python. Search "Allow an app through Windows Firewall" and enable python.exe for both Private and Public networks.
+
+Same Wi-Fi: Ensure phone and PC are on the same network.
+
+Wrong IP: Re-check your IP address (ipconfig) and update api.js.
+
+### 2. Chrome/Selenium Crash
+Run pip install --upgrade webdriver-manager selenium to ensure your drivers match your Chrome version.
+If using Headless mode (headless=True), ensure window size arguments are set to prevent layout issues.
+
+### 3. "Loading Forever"
+The college server might be slow. The app has a 60s timeout.
+Check the Python terminal. If you don't see "Login attempt", the request isn't reaching the server (see Network Error).
+
+## 📂 Project Structure
+```
+REPOSITORY_DIRECTORY
+├── BACKEND/
+│   ├── api.py            # FastAPI Server & Endpoints
+│   ├── extract.py        # Selenium Scraper Logic
+│   ├── requirements.txt  # Requirements
+│   └── venv/             # Python Virtual Environment
+├── ArsdSaathi/
+│   ├── app/              # Main resource of layout
+│   ├── components/       # Reusable UI (DashboardCard, ActionButton)
+│   └── services/         # api.js (Axios & AsyncStorage logic)
+├── app.json              # Expo Configuration
+└── package.json          # Node Dependencies
+```
+<br>
+Made with ❤️ By Keshav Pal.

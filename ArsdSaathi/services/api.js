@@ -1,10 +1,11 @@
-// src/services/api.js
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import NetInfo from '@react-native-community/netinfo'; // <--- Import this
+import NetInfo from '@react-native-community/netinfo';
 import axios from 'axios';
 
+import IP_ADD from '../secret';
+
 // REPLACE WITH YOUR COMPUTER'S IP
-const BASE_URL = 'http://192.168.29.13:8000'; 
+const BASE_URL = `http://${IP_ADD}`; 
 
 const storeData = async (key, value) => {
     try {

@@ -7,6 +7,7 @@ from selenium.webdriver.support.ui import Select
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
+import time 
 
 class ARSDApp:
     def __init__(self, name: str, rollNo: str, dob: str, headless: bool = False):
@@ -202,6 +203,7 @@ class ARSDApp:
             return None
 
     def get_all_data(self):
+        start_time = time.time()
         data = {
             "success": False,
             "attendance": {},
@@ -222,7 +224,10 @@ class ARSDApp:
                 print("Login Failed")
         finally:
             self.safe_quit()
-        
+            
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+        print(f"⏱️  Data extraction completed in {elapsed_time:.2f} seconds")
         return data
 
     def safe_quit(self):

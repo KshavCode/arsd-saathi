@@ -44,6 +44,7 @@ ArsdSaathi/ios
 ArsdSaathi/android
 
 ArsdSaathi/.vscode
+ArsdSaathi/secret.js
 BACKEND/.vscode
 
 BACKEND/venv
@@ -52,7 +53,7 @@ BACKEND/.env
 API/venv
 
 # Ignore Python cache files
-__pycache__/
+BACKEND/__pycache__/
 *.pyc
 *.pyo
 
