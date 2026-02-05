@@ -8,7 +8,7 @@ from functools import partial
 import uuid
 
 # We can keep workers low, but since it's 1 session per user, it's faster now.
-executor = ThreadPoolExecutor(max_workers=3)
+executor = ThreadPoolExecutor(max_workers=5)
 
 class LoginRequest(BaseModel):
     name: str

@@ -8,30 +8,58 @@ import { getData } from '../../services/api';
 // Component for a Single Faculty Member Card
 const FacultyCard = ({ data, theme }) => (
     <View style={[styles.facultyCard, { backgroundColor: theme.card, borderColor: theme.borderColor }]}>
+        
+        {/* --- Header: Teacher Identity --- */}
         <View style={styles.cardHeader}>
-            <View style={[styles.avatar, { backgroundColor: theme.iconBg }]}>
-                <Ionicons name="person" size={24} color={theme.primary} />
-            </View>
-            <View style={{ flex: 1 }}>
-                <Text style={[styles.facultyName, { color: theme.text }]}>{data.Teacher || data.Name || "Unknown Faculty"}</Text>
-                <Text style={[styles.facultyDept, { color: theme.textSecondary }]}>{data.Department || "Department N/A"}</Text>
+            <View style={styles.headerTextCtx}>
+                <Text style={[styles.teacherName, { color: theme.text }]}>
+                    {data.FAC_NAME || "Unknown Faculty"}
+                </Text>
+                <Text style={[styles.teacherCode, { color: theme.textSecondary }]}>
+                    {data.FAC_CODE ? `Faculty Code: ${data.FAC_CODE}` : "No Code"}
+                </Text>
             </View>
         </View>
         
         <View style={[styles.divider, { backgroundColor: theme.borderColor }]} />
         
+        {/* --- Body: Subject Details --- */}
         <View style={styles.cardBody}>
-            <View style={styles.infoRow}>
-                <Ionicons name="book" size={16} color={theme.textSecondary} style={{ marginRight: 8 }} />
-                <Text style={[styles.infoText, { color: theme.text }]}>{data.Subject || "Subject N/A"}</Text>
-            </View>
-            {data.Email && (
-                <View style={[styles.infoRow, { marginTop: 8 }]}>
-                    <Ionicons name="mail" size={16} color={theme.textSecondary} style={{ marginRight: 8 }} />
-                    <Text style={[styles.infoText, { color: theme.text }]}>{data.Email}</Text>
+            <Text style={[styles.label, { color: theme.textSecondary }]}>Teaching Subject</Text>
+            <Text style={[styles.paperName, { color: theme.text }]}>
+                {data.PAPER_NAME || data.Subject || "N/A"}
+            </Text>
+
+            <View style={styles.badgesRow}>
+                {/* Paper ID Badge */}
+                <View style={[styles.badge, { backgroundColor: theme.iconBg }]}>
+                    <Ionicons name="document-text-outline" size={12} color={theme.primary} style={{ marginRight: 4 }} />
+                    <Text style={[styles.badgeText, { color: theme.primary }]}>
+                        {data.PAPER_ID || "No ID"}
+                    </Text>
                 </View>
-            )}
+
+                {/* Section Badge */}
+                {data["PAPER SECTION"] && (
+                    <View style={[styles.badge, { backgroundColor: theme.iconBg }]}>
+                        <Ionicons name="people-outline" size={12} color={theme.primary} style={{ marginRight: 4 }} />
+                        <Text style={[styles.badgeText, { color: theme.primary }]}>
+                            Sec: {data["PAPER SECTION"]}
+                        </Text>
+                    </View>
+                )}
+            </View>
         </View>
+
+        {/* --- Footer: Contact (Optional) --- */}
+        {data.Email && (
+            <View style={[styles.cardFooter, { borderTopColor: theme.borderColor }]}>
+                <Ionicons name="mail-outline" size={16} color={theme.textSecondary} />
+                <Text style={[styles.emailText, { color: theme.textSecondary }]}>
+                    {data.Email}
+                </Text>
+            </View>
+        )}
     </View>
 );
 
@@ -44,21 +72,18 @@ export default function FacultyTab({ navigation, isDarkMode, setIsDarkMode }) {
         textSecondary: isDarkMode ? Colors.dark.secondary : Colors.light.secondary,
         primary: isDarkMode ? Colors.dark.primary : Colors.light.primary,
         iconBg: isDarkMode ? '#252F45' : '#F0F4FF',
-        borderColor: isDarkMode ? '#2E3A52' : '#F1F5F9',
+        borderColor: isDarkMode ? '#2E3A52' : '#E2E8F0',
     };
 
     const [facultyList, setFacultyList] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    // 1. Fetch Faculty Data
     useEffect(() => {
         const loadData = async () => {
             const data = await getData('FACULTY_DATA');
-            // Assuming data is an array: [{Teacher: "Name", Subject: "Sub", ...}, ...]
             if (data && Array.isArray(data)) {
                 setFacultyList(data);
             } else if (data && typeof data === 'object') {
-                // Handle case where it might be wrapped inside another object
                 setFacultyList([data]); 
             }
             setLoading(false);
@@ -115,13 +140,101 @@ const styles = StyleSheet.create({
     themeButton: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 },
     centerContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     
-    // Faculty Card Styles
-    facultyCard: { borderWidth: 1, borderRadius: 16, marginBottom: 16, padding: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
-    cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-    avatar: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-    facultyName: { fontSize: 16, fontWeight: '700', marginBottom: 2 },
-    facultyDept: { fontSize: 13, fontWeight: '500' },
-    divider: { height: 1, width: '100%', marginBottom: 12 },
-    infoRow: { flexDirection: 'row', alignItems: 'center' },
-    infoText: { fontSize: 14, flex: 1, flexWrap: 'wrap' }
+    // --- Faculty Card Styles ---
+    facultyCard: {
+        borderWidth: 1,
+        borderRadius: 16,
+        marginBottom: 16,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 6,
+        elevation: 2,
+        overflow: 'hidden'
+    },
+    
+    // Header
+    cardHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 16,
+    },
+    avatar: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 12,
+    },
+    avatarText: {
+        fontSize: 18,
+        fontWeight: 'bold',
+    },
+    headerTextCtx: {
+        flex: 1,
+    },
+    teacherName: {
+        fontSize: 16,
+        fontWeight: '700',
+        marginBottom: 2,
+    },
+    teacherCode: {
+        fontSize: 12,
+    },
+    
+    divider: {
+        height: 1,
+        width: '100%',
+    },
+
+    // Body
+    cardBody: {
+        padding: 16,
+        paddingTop: 12,
+    },
+    label: {
+        fontSize: 11,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+        marginBottom: 4,
+        fontWeight: '600',
+    },
+    paperName: {
+        fontSize: 15,
+        fontWeight: '500',
+        lineHeight: 22,
+        marginBottom: 12,
+    },
+    badgesRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+    },
+    badge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 4,
+        paddingHorizontal: 10,
+        borderRadius: 8,
+    },
+    badgeText: {
+        fontSize: 12,
+        fontWeight: '600',
+    },
+
+    // Footer
+    cardFooter: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        borderTopWidth: 1,
+        backgroundColor: 'rgba(0,0,0,0.02)', // Very subtle tint
+    },
+    emailText: {
+        fontSize: 13,
+        marginLeft: 8,
+        fontWeight: '500',
+    }
 });

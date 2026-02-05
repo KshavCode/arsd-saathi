@@ -12,28 +12,40 @@ class ARSDApp:
     def __init__(self, name: str, rollNo: str, dob: str, headless: bool = False):
         self.name = name
         self.rollNo = rollNo
-        self.dob = dob  # Expected format: "D-M-YYYY"
+        self.dob = dob
 
         self.chrome_options = Options()
         if headless:
             self.chrome_options.add_argument('--headless=new')
         
+        # --- SPEED OPTIMIZATIONS START ---
+        # 1. Block Images and Fonts (Huge speedup)
+        prefs = {
+            "profile.managed_default_content_settings.images": 2,
+            "profile.managed_default_content_settings.fonts": 2,
+            "profile.default_content_setting_values.notifications": 2,
+        }
+        self.chrome_options.add_experimental_option("prefs", prefs)
+        
+        # 2. Disable Rendering features
+        self.chrome_options.add_argument('--blink-settings=imagesEnabled=false')
+        self.chrome_options.add_argument("--disable-extensions")
+        self.chrome_options.add_argument("--dns-prefetch-disable")
+        # ---------------------------------
+
         self.chrome_options.add_argument("--start-maximized")
         self.chrome_options.add_argument("--window-size=1920,1080")
         self.chrome_options.add_argument('--disable-gpu')
         self.chrome_options.add_argument('--no-sandbox')
         self.chrome_options.add_argument('--disable-dev-shm-usage')
-        self.chrome_options.set_capability("pageLoadStrategy", "eager")
+        self.chrome_options.set_capability("pageLoadStrategy", "eager") # Don't wait for full load
 
         self.driver = webdriver.Chrome(
             service=Service(ChromeDriverManager().install()),
             options=self.chrome_options
         )
-        # Standard wait for critical elements (Login)
         self.wait = WebDriverWait(self.driver, 30)
-        # Short wait for optional elements (Data that might be missing)
-        self.short_wait = WebDriverWait(self.driver, 5)
-        
+        self.short_wait = WebDriverWait(self.driver, 5) # Fast fail wait
         self.url = "https://www.arsdcollege.in/Internet/Student/Login.aspx"
 
     def smart_select(self, select_element, value):
@@ -48,22 +60,20 @@ class ARSDApp:
                     alt_value = value.zfill(2)
                 select.select_by_value(alt_value)
             except Exception as e:
-                print(f"Could not select date value '{value}'. Error: {e}")
+                print(f"Selection Error: {value}. {e}")
                 raise e
 
     def login(self):
         try:
             self.driver.get(self.url)
 
-            # 1. Fill Roll No & Name
             try:
                 self.wait.until(EC.presence_of_element_located((By.ID, "txtrollno"))).send_keys(self.rollNo)
                 self.wait.until(EC.presence_of_element_located((By.ID, "txtname"))).send_keys(self.name)
             except TimeoutException:
-                print("Login Error: input fields not found")
+                print("Login Error: Fields not found")
                 return False
 
-            # 2. Date of Birth
             try:
                 day, month, year = self.dob.split('-')
             except ValueError:
@@ -77,13 +87,11 @@ class ARSDApp:
             else:
                 return False
 
-            # 3. Submit
             try:
                 self.driver.find_element(By.ID, "btnsearch").click()
             except NoSuchElementException:
                 self.driver.find_element(By.XPATH, "//input[@type='submit']").click()
 
-            # 4. Check Success
             try:
                 WebDriverWait(self.driver, 5).until(lambda d: "Login.aspx" not in d.current_url)
                 return True
@@ -94,31 +102,25 @@ class ARSDApp:
             print(f"Login Failed: {e}")
             return False
 
-    # --- SCRAPERS WITH FAST FAIL ---
-
     def _scrape_attendance(self):
         try:
             self.driver.get("https://www.arsdcollege.in/Internet/Student/Attendance_Report_Monthly.aspx")
             
-            # Select 'TE' (Theory)
             try:
                 select_element = self.short_wait.until(EC.element_to_be_clickable((By.ID, "ddlpapertype")))
                 Select(select_element).select_by_value("'TE'")
                 self.driver.find_element(By.ID, "btnsearch").click()
             except:
-                pass # Proceed even if selection fails
+                pass 
 
-            # FAST CHECK: Look for "No Record Found" message first
             try:
-                error_msg = self.short_wait.until(EC.presence_of_element_located((By.ID, "lblmsg")))
-                if error_msg.text.strip():
-                    return {} # Empty, but successful
-            except TimeoutException:
-                pass # No error message, proceed to table
+                # Fast fail if "No Record" message exists
+                if self.driver.find_elements(By.ID, "lblmsg"):
+                    if self.driver.find_element(By.ID, "lblmsg").text.strip():
+                        return {}
+            except: pass
 
-            # Scrape Table
             try:
-                # Use short_wait here. If table isn't there in 5s after clicking search, it's not coming.
                 table = self.short_wait.until(EC.presence_of_element_located((By.ID, "gvshow")))
                 rows = table.find_elements(By.TAG_NAME, "tr")
                 if len(rows) < 2: return {}
@@ -139,17 +141,19 @@ class ARSDApp:
 
                 return attendance_data
             except TimeoutException:
-                return {} # Table never appeared
-        except Exception as e:
-            print(f"Attendance Error: {e}")
+                return {}
+        except Exception:
             return {}
 
     def _scrape_faculty(self):
         try:
             self.driver.get("https://www.arsdcollege.in/Internet/Student/Check_Student_Faculty_Details.aspx")
             try:
-                # Use short_wait. If no faculty assigned, don't wait 60s
-                table = self.short_wait.until(EC.presence_of_element_located((By.ID, "gvshow")))
+                # Optimized: Don't wait if table isn't there immediately
+                if not self.driver.find_elements(By.ID, "gvshow"):
+                    return []
+                    
+                table = self.driver.find_element(By.ID, "gvshow")
                 rows = table.find_elements(By.TAG_NAME, "tr")
                 if len(rows) == 0: return []
                 
@@ -162,7 +166,7 @@ class ARSDApp:
                         if i < len(headers): row_dict[headers[i]] = cols[i].text.strip()
                     faculty_list.append(row_dict)
                 return faculty_list
-            except TimeoutException:
+            except:
                 return []
         except Exception:
             return []
@@ -170,7 +174,6 @@ class ARSDApp:
     def _scrape_mentor(self):
         try:
             self.driver.get("https://www.arsdcollege.in/Internet/Student/Mentor_Details.aspx")
-            # Use short_wait
             return self.short_wait.until(EC.presence_of_element_located((By.ID, "lblmentor_name"))).text.strip()
         except:
             return None
@@ -178,8 +181,7 @@ class ARSDApp:
     def _scrape_basic_details(self):
         try:
             self.driver.get("https://www.arsdcollege.in/Internet/Student/STD_Basic_Details.aspx")
-            # Wait for at least one element to ensure page load
-            self.wait.until(EC.presence_of_element_located((By.ID, "lbleno")))
+            self.short_wait.until(EC.presence_of_element_located((By.ID, "lbleno")))
             
             def get_text(eid):
                 try: return self.driver.find_element(By.ID, eid).text.strip()
@@ -200,9 +202,6 @@ class ARSDApp:
             return None
 
     def get_all_data(self):
-        """
-        Logins ONCE and fetches ALL data sequentially.
-        """
         data = {
             "success": False,
             "attendance": {},
@@ -214,13 +213,11 @@ class ARSDApp:
         try:
             if self.login():
                 data["success"] = True
-                print("Login Successful. Fetching data...")
-                
+                print("Login Success. Fetching...")
                 data["basic_details"] = self._scrape_basic_details()
                 data["attendance"] = self._scrape_attendance()
                 data["faculty"] = self._scrape_faculty()
                 data["mentor"] = self._scrape_mentor()
-                
             else:
                 print("Login Failed")
         finally:
@@ -232,3 +229,8 @@ class ARSDApp:
         try:
             if hasattr(self, 'driver'): self.driver.quit()
         except: pass
+
+if __name__ == '__main__':
+    # Test block
+    app = ARSDApp(name='Keshav Pal', rollNo='23/38046', dob='02-08-2005', headless=False)
+    print(app.get_all_data())
