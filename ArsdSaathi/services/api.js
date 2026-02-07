@@ -36,11 +36,12 @@ export const loginAndFetchAll = async (name, rollNo, dob) => {
     }
 
     try {
-        // Ping check (Fast fail)
+        // 🟢 Ping the new route we just created
         await axios.get(`${BASE_URL}/`, { timeout: 5000 });
+        console.log("Server is awake!");
     } catch (error) {
         console.error("Ping Failed", error);
-        return { success: false, message: "Server Unreachable." };
+        return { success: false, message: "Server is waking up. Please try again in 30 seconds." };
     }
     
     try {

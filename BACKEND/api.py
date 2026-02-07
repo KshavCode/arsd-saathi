@@ -34,6 +34,10 @@ app.add_middleware(
 # --- DEFINE YOUR SHARED API KEY ---
 API_SECRET_KEY = os.getenv("API_KEY") 
 
+@app.get("/")
+def health_check():
+    return {"status": "ok", "message": "ArsdSaathi API is running"}
+
 async def verify_api_key(x_api_key: str = Header(None)):
     """Rejects requests that don't have the correct header key"""
     if x_api_key != API_SECRET_KEY:
