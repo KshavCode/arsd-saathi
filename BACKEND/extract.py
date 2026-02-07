@@ -21,34 +21,44 @@ class ARSDApp:
         if headless:
             self.chrome_options.add_argument('--headless=new')
         
-        # --- SPEED OPTIMIZATIONS START ---
-        # 1. Block Images and Fonts (Huge speedup)
+        # --- ☢️ NUCLEAR RAM SAVING FLAGS (For Render Free Tier) ---
+        # These are critical to stop the 300s crashes on 512MB RAM
+        self.chrome_options.add_argument('--no-sandbox')
+        self.chrome_options.add_argument('--disable-dev-shm-usage')
+        self.chrome_options.add_argument('--disable-gpu')
+        self.chrome_options.add_argument('--disable-extensions')
+        self.chrome_options.add_argument('--disable-infobars')
+        self.chrome_options.add_argument('--dns-prefetch-disable')
+        self.chrome_options.add_argument('--disable-browser-side-navigation')
+        self.chrome_options.add_argument('--disable-software-rasterizer')
+        
+        # FORCE Single Process (Crucial for low RAM)
+        self.chrome_options.add_argument('--renderer-process-limit=1')
+        self.chrome_options.add_argument('--single-process') 
+        self.chrome_options.add_argument('--no-zygote')
+        
+        # Block heavy assets at the engine level
         prefs = {
             "profile.managed_default_content_settings.images": 2,
             "profile.managed_default_content_settings.fonts": 2,
             "profile.default_content_setting_values.notifications": 2,
+            "profile.managed_default_content_settings.stylesheets": 2, # Block CSS
         }
         self.chrome_options.add_experimental_option("prefs", prefs)
-        
-        # 2. Disable Rendering features
         self.chrome_options.add_argument('--blink-settings=imagesEnabled=false')
-        self.chrome_options.add_argument("--disable-extensions")
-        self.chrome_options.add_argument("--dns-prefetch-disable")
-        # ---------------------------------
-
-        self.chrome_options.add_argument("--start-maximized")
-        self.chrome_options.add_argument("--window-size=1920,1080")
-        self.chrome_options.add_argument('--disable-gpu')
-        self.chrome_options.add_argument('--no-sandbox')
-        self.chrome_options.add_argument('--disable-dev-shm-usage')
-        self.chrome_options.set_capability("pageLoadStrategy", "eager") # Don't wait for full load
+        
+        # Don't wait for full page load (Speed boost)
+        self.chrome_options.set_capability("pageLoadStrategy", "eager")
+        self.chrome_options.add_argument("--window-size=1280,720") # Smaller window = Less RAM
 
         self.driver = webdriver.Chrome(
             service=Service(ChromeDriverManager().install()),
             options=self.chrome_options
         )
-        self.wait = WebDriverWait(self.driver, 30)
-        self.short_wait = WebDriverWait(self.driver, 5) # Fast fail wait
+        
+        # OPTIMIZED TIMEOUTS: Fail fast instead of hanging for 30s
+        self.wait = WebDriverWait(self.driver, 15) 
+        self.short_wait = WebDriverWait(self.driver, 3) 
         self.url = "https://www.arsdcollege.in/Internet/Student/Login.aspx"
 
     def smart_select(self, select_element, value):
@@ -63,8 +73,8 @@ class ARSDApp:
                     alt_value = value.zfill(2)
                 select.select_by_value(alt_value)
             except Exception as e:
-                print(f"Selection Error: {value}. {e}")
-                raise e
+                # print(f"Selection Error: {value}. {e}")
+                pass # Silence errors in production
 
     def login(self):
         try:
@@ -72,7 +82,7 @@ class ARSDApp:
 
             try:
                 self.wait.until(EC.presence_of_element_located((By.ID, "txtrollno"))).send_keys(self.rollNo)
-                self.wait.until(EC.presence_of_element_located((By.ID, "txtname"))).send_keys(self.name)
+                self.driver.find_element(By.ID, "txtname").send_keys(self.name)
             except TimeoutException:
                 print("Login Error: Fields not found")
                 return False
@@ -96,6 +106,7 @@ class ARSDApp:
                 self.driver.find_element(By.XPATH, "//input[@type='submit']").click()
 
             try:
+                # Wait for URL change to confirm login
                 WebDriverWait(self.driver, 5).until(lambda d: "Login.aspx" not in d.current_url)
                 return True
             except TimeoutException:
@@ -117,7 +128,6 @@ class ARSDApp:
                 pass 
 
             try:
-                # Fast fail if "No Record" message exists
                 if self.driver.find_elements(By.ID, "lblmsg"):
                     if self.driver.find_element(By.ID, "lblmsg").text.strip():
                         return {}
@@ -152,7 +162,6 @@ class ARSDApp:
         try:
             self.driver.get("https://www.arsdcollege.in/Internet/Student/Check_Student_Faculty_Details.aspx")
             try:
-                # Optimized: Don't wait if table isn't there immediately
                 if not self.driver.find_elements(By.ID, "gvshow"):
                     return []
                     
@@ -218,8 +227,12 @@ class ARSDApp:
             if self.login():
                 data["success"] = True
                 print("Login Success. Fetching...")
+                
+                # Fetch sequence optimized for importance
                 data["basic_details"] = self._scrape_basic_details()
                 data["attendance"] = self._scrape_attendance()
+                
+                # If you STILL get 300s timeouts, comment out these next two lines:
                 data["faculty"] = self._scrape_faculty()
                 data["mentor"] = self._scrape_mentor()
             else:
@@ -238,15 +251,18 @@ class ARSDApp:
                 self.driver.quit()
         except:
             pass
-        # Force kill any lingering chrome processes (Linux/Render specific)
+        
+        # ⚠️ LINUX ONLY: Force kill any "Zombie" Chrome processes to save RAM
         try:
             import os
             os.system("pkill -f chrome")
+            os.system("pkill -f chromedriver")
         except:
             pass
 
 if __name__ == '__main__':
     # Test block
     load_dotenv()
+    # Ensure headless=True for server testing, but False for local if you want to see
     app = ARSDApp(name=os.getenv("NAME"), rollNo=os.getenv("ROLL_NO"), dob=os.getenv("DOB"), headless=False)
     print(app.get_all_data())
