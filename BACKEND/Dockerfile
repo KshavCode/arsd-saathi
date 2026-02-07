@@ -1,32 +1,32 @@
-# 1. Use the SAME Python version as your local machine
+# 1. Use the correct Python version
 FROM python:3.12-slim
 
-# 2. Install Chrome and dependencies
-# (We need wget, gnupg, and curl to download Chrome)
+# 2. Install essential tools first (curl, wget, gnupg)
 RUN apt-get update && apt-get install -y \
     wget \
+    curl \
     gnupg \
     unzip \
-    curl \
-    && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
-    && echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list \
-    && apt-get update \
-    && apt-get install -y google-chrome-stable \
     && rm -rf /var/lib/apt/lists/*
 
-# 3. Set the working directory
+# 3. Install Chrome (The "Direct Deb" way - Crash Proof)
+# We download the official .deb and let apt handle the dependencies
+RUN wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
+    && apt-get update \
+    && apt-get install -y ./google-chrome-stable_current_amd64.deb \
+    && rm google-chrome-stable_current_amd64.deb
+
+# 4. Set the working directory
 WORKDIR /app
 
-# 4. Copy the Clean requirements file
+# 5. Copy the Clean requirements file
 COPY requirements.txt .
 
-# 5. Install Python libraries
-# --no-cache-dir keeps the image small
+# 6. Install Python libraries
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 6. Copy your code (api.py, extract.py)
+# 7. Copy your code
 COPY . .
 
-# 7. Start the server
-# Uses $PORT variable provided by Render automatically
+# 8. Start the server
 CMD uvicorn api:app --host 0.0.0.0 --port $PORT
