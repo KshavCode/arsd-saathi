@@ -1,59 +1,9 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
-
-# dependencies
-ArsdSaathi/node_modules/
-
-# Expo
-ArsdSaathi/.expo/
-ArsdSaathi/dist/
-ArsdSaathi/web-build/
-ArsdSaathi/expo-env.d.ts
-
-# Native
-ArsdSaathi/.kotlin/
-ArsdSaathi/*.orig.*
-ArsdSaathi/*.jks
-ArsdSaathi/*.p8
-ArsdSaathi/*.p12
-ArsdSaathi/*.key
-ArsdSaathi/*.mobileprovision
-
-# Metro
-ArsdSaathi/.metro-health-check*
-
-# debug
-ArsdSaathi/npm-debug.*
-ArsdSaathi/yarn-debug.*
-ArsdSaathi/yarn-error.*
-
-# macOS
-ArsdSaathi/.DS_Store
-ArsdSaathi/*.pem
-
-# local env files
-ArsdSaathi/.env*.local
-
-# typescript
-ArsdSaathi/*.tsbuildinfo
-
-ArsdSaathi/app-example
-ArsdSaathi/expo-env.d.ts
-
-# generated native folders
-ArsdSaathi/ios
-ArsdSaathi/android
-
-ArsdSaathi/.vscode
-ArsdSaathi/secret.js
-BACKEND/.vscode
-
-BACKEND/venv
-BACKEND/.env
-
-API/venv
+.vscode/
+venv/
+.env
 
 # Ignore Python cache files
-BACKEND/__pycache__/
+__pycache__/
 *.pyc
 *.pyo
 
